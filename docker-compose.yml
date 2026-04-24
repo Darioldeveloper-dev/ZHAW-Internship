@@ -18,7 +18,7 @@ services:
       - "5001:5001"
     environment:
       - STATS_PORT=5001
-      - OTLP_ENDPOINT=http://jaeger:4317
+      - OTLP_ENDPOINT=jaeger:4317
       - DEBUG=false
     depends_on:
       - jaeger
@@ -36,7 +36,7 @@ services:
       - OLLAMA_URL=http://host.docker.internal:11434/api/generate
       - OLLAMA_MODEL=llama3.1:8b
       - STATS_URL=http://stats_service:5001/log
-      - OTLP_ENDPOINT=http://jaeger:4317
+      - OTLP_ENDPOINT=jaeger:4317
       - DEBUG=false
     depends_on:
       - stats_service

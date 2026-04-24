@@ -1,0 +1,4 @@
+flask==3.0.3
+opentelemetry-sdk==1.24.0
+opentelemetry-exporter-jaeger==1.21.0
+opentelemetry-instrumentation-flask==0.45b0

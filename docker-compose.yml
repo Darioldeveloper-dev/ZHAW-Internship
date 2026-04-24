@@ -1,31 +1,33 @@
-version: '3.8'
-
 services:
 
   jaeger:
     image: jaegertracing/all-in-one:latest
     container_name: jaeger
     ports:
-      - "16686:16686"   # Jaeger UI
-      - "6831:6831/udp" # trace receiver
+      - "16686:16686"
+      - "4317:4317"
+      - "6831:6831/udp"
     restart: unless-stopped
 
   stats_service:
-    build: ./stats_service
+    build:
+      context: .
+      dockerfile: stats_service/Dockerfile
     container_name: stats_service
     ports:
       - "5001:5001"
     environment:
       - STATS_PORT=5001
-      - JAEGER_HOST=jaeger
-      - JAEGER_PORT=6831
+      - OTLP_ENDPOINT=http://jaeger:4317
       - DEBUG=false
     depends_on:
       - jaeger
     restart: unless-stopped
 
   main_service:
-    build: ./main_service
+    build:
+      context: .
+      dockerfile: main_service/Dockerfile
     container_name: main_service
     ports:
       - "5000:5000"
@@ -34,8 +36,7 @@ services:
       - OLLAMA_URL=http://host.docker.internal:11434/api/generate
       - OLLAMA_MODEL=llama3.1:8b
       - STATS_URL=http://stats_service:5001/log
-      - JAEGER_HOST=jaeger
-      - JAEGER_PORT=6831
+      - OTLP_ENDPOINT=http://jaeger:4317
       - DEBUG=false
     depends_on:
       - stats_service

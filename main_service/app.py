@@ -5,16 +5,16 @@ from flask import Flask, request, jsonify
 from opentelemetry import trace
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor
-from opentelemetry.exporter.jaeger.thrift import JaegerExporter
+from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
 from opentelemetry.instrumentation.flask import FlaskInstrumentor
 from opentelemetry.instrumentation.requests import RequestsInstrumentor
 
 # --- Tracing setup ---
 provider = TracerProvider()
 provider.add_span_processor(BatchSpanProcessor(
-    JaegerExporter(
-        agent_host_name=os.getenv("JAEGER_HOST", "localhost"),
-        agent_port=int(os.getenv("JAEGER_PORT", 6831))
+    OTLPSpanExporter(
+        endpoint=os.getenv("OTLP_ENDPOINT", "http://localhost:4317"),
+        insecure=True
     )
 ))
 trace.set_tracer_provider(provider)
@@ -32,8 +32,8 @@ STATS_URL    = os.getenv("STATS_URL",    "http://localhost:5001/log")
 
 def ask_ollama(description: str) -> str:
     with tracer.start_as_current_span("ollama-inference") as span:
-        span.set_attribute("ollama.model",       OLLAMA_MODEL)
-        span.set_attribute("input.description",  description)
+        span.set_attribute("ollama.model",      OLLAMA_MODEL)
+        span.set_attribute("input.description", description)
 
         payload = {
             "model" : OLLAMA_MODEL,
@@ -93,4 +93,8 @@ def health():
 
 if __name__ == '__main__':
     port = int(os.getenv("MAIN_PORT", 5000))
-    app.run(host='0.0.0.0', port=port, debug=os.getenv("DEBUG", "true").lower() == "true")
+    app.run(
+        host='0.0.0.0',
+        port=port,
+        debug=os.getenv("DEBUG", "true").lower() == "true"
+    )

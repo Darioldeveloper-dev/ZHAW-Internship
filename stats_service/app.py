@@ -5,15 +5,15 @@ from flask import Flask, request, jsonify
 from opentelemetry import trace
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor
-from opentelemetry.exporter.jaeger.thrift import JaegerExporter
+from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
 from opentelemetry.instrumentation.flask import FlaskInstrumentor
 
 # --- Tracing setup ---
 provider = TracerProvider()
 provider.add_span_processor(BatchSpanProcessor(
-    JaegerExporter(
-        agent_host_name=os.getenv("JAEGER_HOST", "localhost"),
-        agent_port=int(os.getenv("JAEGER_PORT", 6831))
+    OTLPSpanExporter(
+        endpoint=os.getenv("OTLP_ENDPOINT", "http://localhost:4317"),
+        insecure=True
     )
 ))
 trace.set_tracer_provider(provider)
@@ -23,8 +23,8 @@ tracer = trace.get_tracer("stats_service")
 app = Flask(__name__)
 FlaskInstrumentor().instrument_app(app)
 
-log     = []
-counts  = Counter()
+log    = []
+counts = Counter()
 
 @app.route('/log', methods=['POST'])
 def log_guess():
@@ -49,9 +49,9 @@ def log_guess():
 def get_stats():
     with tracer.start_as_current_span("get-stats"):
         return jsonify({
-            'total' : len(log),
-            'top5'  : counts.most_common(5),
-            'all_counts': dict(counts)
+            'total'      : len(log),
+            'top5'       : counts.most_common(5),
+            'all_counts' : dict(counts)
         })
 
 @app.route('/health', methods=['GET'])
@@ -60,4 +60,8 @@ def health():
 
 if __name__ == '__main__':
     port = int(os.getenv("STATS_PORT", 5001))
-    app.run(host='0.0.0.0', port=port, debug=os.getenv("DEBUG", "true").lower() == "true")
+    app.run(
+        host='0.0.0.0',
+        port=port,
+        debug=os.getenv("DEBUG", "true").lower() == "true"
+    )

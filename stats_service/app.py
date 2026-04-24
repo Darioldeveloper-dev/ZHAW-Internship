@@ -7,9 +7,10 @@ from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor
 from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
 from opentelemetry.instrumentation.flask import FlaskInstrumentor
+from opentelemetry.sdk.resources import Resource
 
 # --- Tracing setup ---
-provider = TracerProvider()
+provider = TracerProvider(resource=Resource.create({"service.name": "stats_service"}))
 provider.add_span_processor(BatchSpanProcessor(
     OTLPSpanExporter(
         endpoint=os.getenv("OTLP_ENDPOINT", "http://localhost:4317"),

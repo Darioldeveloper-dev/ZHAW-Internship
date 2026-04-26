@@ -1,0 +1,44 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: main-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: main-service
+  template:
+    metadata:
+      labels:
+        app: main-service
+    spec:
+      containers:
+      - name: main-service
+        image: zhaw-internship-main_service:latest
+        imagePullPolicy: Never
+        ports:
+        - containerPort: 5000
+        env:
+        - name: MAIN_PORT
+          value: "5000"
+        - name: OLLAMA_URL
+          value: "http://172.17.0.1:11434/api/generate"
+        - name: OLLAMA_MODEL
+          value: "llama3.1:8b"
+        - name: STATS_URL
+          value: "http://stats-service:5001/log"
+        - name: OTLP_ENDPOINT
+          value: "jaeger:4317"
+        - name: DEBUG
+          value: "false"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: main-service
+spec:
+  selector:
+    app: main-service
+  ports:
+  - port: 5000
+    targetPort: 5000
